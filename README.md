@@ -2,7 +2,6 @@
 
 Система мониторинга отправки и получения посылок и писем с разделением ролей отправителя, получателя и оператора отделения почтовой связи.
 
-Серверная часть строится как модульный монолит на Kotlin и Ktor. Приложение запускается единым процессом, а данные хранятся в PostgreSQL.
 
 ## 1. Назначение системы
 
@@ -44,61 +43,13 @@
 ## 3. Структура проекта
 
 ```text
-app                       запуск и конфигурация Ktor
+app                       запуск
 shared                    общие доменные типы
 modules/identity          пользователи и роли
 modules/pricing           расчёт стоимости доставки
 modules/shipment          жизненный цикл отправления
 modules/tracking          события отслеживания
-modules/warehouse         хранение и выдача
-infrastructure/postgres   подключение к PostgreSQL и миграции Flyway
+modules/warehouse         хранение
+infrastructure/postgres   подключение к PostgreSQL
 ```
 
-## 4. Запуск
-
-Для запуска приложения и PostgreSQL требуется Docker Compose:
-
-```bash
-docker compose up --build
-```
-
-После запуска доступны проверки состояния приложения:
-
-* `GET http://localhost:8080/health/live`
-* `GET http://localhost:8080/health/ready`
-
-Остановить приложение:
-
-```bash
-docker compose down
-```
-
-Для удаления контейнеров вместе с локальными данными PostgreSQL:
-
-```bash
-docker compose down -v
-```
-
-## 5. Локальная сборка
-
-Для локальной сборки требуется JDK 21 или новее:
-
-```bash
-./gradlew compileKotlin
-```
-
-Результаты сборки сохраняются в корневом каталоге `build/` и группируются по модулям.
-
-Для запуска без Docker необходимо запустить PostgreSQL и задать переменные окружения:
-
-```text
-DATABASE_URL=jdbc:postgresql://localhost:5432/posttrack
-DATABASE_USER=posttrack
-DATABASE_PASSWORD=posttrack
-```
-
-После этого приложение можно запустить командой:
-
-```bash
-./gradlew :app:run
-```
