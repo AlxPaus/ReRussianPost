@@ -11,3 +11,21 @@ allprojects {
         mavenCentral()
     }
 }
+
+subprojects {
+    val projectBuildPath = path.removePrefix(":").replace(':', '/')
+    layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(projectBuildPath))
+
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
+        tasks.withType<JavaCompile>().configureEach {
+            options.release.set(21)
+        }
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
+    }
+}
