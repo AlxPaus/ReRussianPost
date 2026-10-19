@@ -3,6 +3,8 @@ package ru.posttrack.postgres
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
+import ru.posttrack.shared.TransactionManager
+import java.sql.Connection
 import java.sql.SQLException
 
 fun interface DatabaseHealth {
@@ -12,7 +14,33 @@ fun interface DatabaseHealth {
 class PostgresDatabase private constructor(
     private val dataSource: HikariDataSource,
 ) : DatabaseHealth,
+    TransactionManager,
     AutoCloseable {
+    private val currentConnection = ThreadLocal<Connection>()
+
+    internal fun connection(): Connection = checkNotNull(currentConnection.get()) { "Repository calls must run inside a transaction" }
+
+    override fun <T> execute(block: () -> T): T {
+        check(currentConnection.get() == null) { "Nested transactions are not supported" }
+        return dataSource.connection.use { connection ->
+            currentConnection.set(connection)
+            try {
+                val result = block()
+                connection.commit()
+                result
+            } catch (error: Throwable) {
+                try {
+                    connection.rollback()
+                } catch (rollbackError: SQLException) {
+                    error.addSuppressed(rollbackError)
+                }
+                throw error
+            } finally {
+                currentConnection.remove()
+            }
+        }
+    }
+
     fun migrate() {
         Flyway
             .configure()
