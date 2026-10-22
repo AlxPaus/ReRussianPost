@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-posttrack}
+      POSTGRES_USER: ${POSTGRES_USER:-posttrack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-posttrack}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - posttrack-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    environment:
+      APP_PORT: 8080
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-posttrack}
+      DATABASE_USER: ${POSTGRES_USER:-posttrack}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-posttrack}
+      PICKUP_CODE_SECRET: ${PICKUP_CODE_SECRET:?Set PICKUP_CODE_SECRET in .env}
+      RUSSIAN_POST_TOKEN: ${RUSSIAN_POST_TOKEN:-}
+      RUSSIAN_POST_USER_KEY: ${RUSSIAN_POST_USER_KEY:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  posttrack-data:
